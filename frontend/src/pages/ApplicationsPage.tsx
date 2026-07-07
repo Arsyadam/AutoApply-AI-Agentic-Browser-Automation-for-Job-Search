@@ -9,7 +9,6 @@ import Alert from '@mui/material/Alert';
 import InboxIcon from '@mui/icons-material/Inbox';
 
 import ApplicationCard from '@/components/applications/ApplicationCard';
-import StatusUpdateDialog from '@/components/applications/StatusUpdateDialog';
 import LoadingState from '@/components/common/LoadingState';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useApplications, useApproveApplication } from '@/hooks/useApplications';
@@ -30,7 +29,6 @@ const STATUS_TABS = [
 function ApplicationsPage() {
   const [tabIndex, setTabIndex] = useState(0);
   const [page, setPage] = useState(1);
-  const [statusAppId, setStatusAppId] = useState<string | null>(null);
   const showNotification = useAppStore((s) => s.showNotification);
 
   const currentStatus = STATUS_TABS[tabIndex]?.value;
@@ -108,7 +106,6 @@ function ApplicationsPage() {
                   <ApplicationCard
                     application={app}
                     onApprove={handleApprove}
-                    onUpdateStatus={setStatusAppId}
                   />
                 </Grid>
               ))}
@@ -126,12 +123,6 @@ function ApplicationsPage() {
             )}
           </>
         )}
-
-        <StatusUpdateDialog
-          appId={statusAppId}
-          open={statusAppId !== null}
-          onClose={() => setStatusAppId(null)}
-        />
       </Box>
     </ErrorBoundary>
   );
