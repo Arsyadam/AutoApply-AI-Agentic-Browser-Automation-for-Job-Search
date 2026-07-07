@@ -13,7 +13,8 @@ import structlog
 from sqlalchemy import select
 
 from app.api.websocket.events import manager as ws_manager
-from app.config.constants import QUEUE_APPLY, ApplicationStatus
+from app.config.constants import QUEUE_APPLY
+from app.models.enums import ApplicationStatus
 from app.config.settings import get_settings
 from app.core.automation.platforms import platform_registry
 from app.core.automation.platforms.base import JobListing
