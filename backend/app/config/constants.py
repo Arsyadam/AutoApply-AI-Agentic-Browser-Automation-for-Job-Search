@@ -1,5 +1,7 @@
 """Application-wide constants."""
 
+from app.models.enums import ApplicationStatus, ApplyMode, JobStatus, LLMPurpose, ResumeType
+
 # API version
 API_V1_PREFIX = "/api/v1"
 

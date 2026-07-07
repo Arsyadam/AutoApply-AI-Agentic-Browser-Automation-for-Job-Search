@@ -7,13 +7,18 @@ from app.schemas.analytics import (
     LLMUsageStats,
     TimelineEntry,
 )
+from app.schemas.admin import SystemIssueResponse
 from app.schemas.application import (
     ApplicationBatchCreate,
+    ApplicationBulkApprove,
     ApplicationCreate,
+    ApplicationIntervention,
     ApplicationListResponse,
     ApplicationResponse,
     ApplicationStatusUpdate,
+    CoverLetterResponse,
 )
+from app.schemas.auth import RegisterRequest, TokenResponse, UserResponse, WSTicketResponse
 from app.schemas.job import (
     JobAnalysisResponse,
     JobListingResponse,
@@ -34,12 +39,15 @@ __all__ = [
     "ATSScoreDistribution",
     # application
     "ApplicationBatchCreate",
+    "ApplicationBulkApprove",
     "ApplicationCreate",
     # analytics
     "ApplicationFunnelData",
     "ApplicationListResponse",
     "ApplicationResponse",
     "ApplicationStatusUpdate",
+    "ApplicationIntervention",
+    "CoverLetterResponse",
     "DashboardStats",
     # job
     "JobAnalysisResponse",
@@ -58,5 +66,10 @@ __all__ = [
     "ResumeUploadResponse",
     "SettingsResponse",
     "SettingsUpdate",
+    "SystemIssueResponse",
     "TimelineEntry",
+    "TokenResponse",
+    "RegisterRequest",
+    "UserResponse",
+    "WSTicketResponse",
 ]

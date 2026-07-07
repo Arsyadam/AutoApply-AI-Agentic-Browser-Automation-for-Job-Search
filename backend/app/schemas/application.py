@@ -45,6 +45,12 @@ class ApplicationBatchCreate(BaseModel):
     apply_mode: ApplyModeEnum = ApplyModeEnum.REVIEW
 
 
+class ApplicationBulkApprove(BaseModel):
+    """Request payload for approving many staged applications."""
+
+    application_ids: list[str] = Field(..., min_length=1)
+
+
 class ApplicationStatusUpdate(BaseModel):
     """Request to update application status."""
 
@@ -79,3 +85,16 @@ class ApplicationListResponse(BaseModel):
     page: int
     page_size: int
     has_next: bool
+
+
+class ApplicationIntervention(BaseModel):
+    """User response to a runtime intervention prompt (captcha/2fa)."""
+
+    response: str
+
+
+class CoverLetterResponse(BaseModel):
+    """Cover letter generation response."""
+
+    application_id: str
+    cover_letter_path: str | None = None
