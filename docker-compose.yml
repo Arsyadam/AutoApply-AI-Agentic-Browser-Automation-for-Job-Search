@@ -1,18 +1,71 @@
+x-app-environment: &app-environment
+  DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://autoapply:autoapply_change_me@postgres:5432/autoapply}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  ENVIRONMENT: ${ENVIRONMENT:-production}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  METRICS_TOKEN: ${METRICS_TOKEN:-}
+  APPLY_MODE: ${APPLY_MODE:-review}
+  MIN_ATS_SCORE: ${MIN_ATS_SCORE:-0.75}
+  HOST: ${HOST:-0.0.0.0}
+  PORT: ${PORT:-8000}
+  CORS_ORIGINS: ${CORS_ORIGINS:-["https://autoapply.arsyadam.id"]}
+  AUTH__SECRET_KEY: ${AUTH__SECRET_KEY:-dev-insecure-change-me}
+  SECRETS__PROVIDER: ${SECRETS__PROVIDER:-local}
+  SECRETS__APP_KEYS: ${SECRETS__APP_KEYS:-}
+  STORAGE__PROVIDER: ${STORAGE__PROVIDER:-local}
+  STORAGE__LOCAL_ROOT: ${STORAGE__LOCAL_ROOT:-./data/storage}
+  STORAGE__URL_SIGNING_SECRET: ${STORAGE__URL_SIGNING_SECRET:-dev-insecure-change-me}
+  STORAGE__BUCKET: ${STORAGE__BUCKET:-}
+  STORAGE__REGION: ${STORAGE__REGION:-}
+  STORAGE__ENDPOINT_URL: ${STORAGE__ENDPOINT_URL:-}
+  STORAGE__ACCESS_KEY_ID: ${STORAGE__ACCESS_KEY_ID:-}
+  STORAGE__SECRET_ACCESS_KEY: ${STORAGE__SECRET_ACCESS_KEY:-}
+  LLM__PORTKEY_API_KEY: ${LLM__PORTKEY_API_KEY:-}
+  LLM__OPENAI_API_KEY: ${LLM__OPENAI_API_KEY:-}
+  LLM__OPENAI_API_BASE: ${LLM__OPENAI_API_BASE:-}
+  LLM__GROQ_API_KEY: ${LLM__GROQ_API_KEY:-}
+  LLM__GROQ_API_BASE: ${LLM__GROQ_API_BASE:-}
+  LLM__GEMINI_API_KEY: ${LLM__GEMINI_API_KEY:-}
+  LLM__GEMINI_API_BASE: ${LLM__GEMINI_API_BASE:-}
+  LLM__OPENROUTER_API_KEY: ${LLM__OPENROUTER_API_KEY:-}
+  LLM__OPENROUTER_API_BASE: ${LLM__OPENROUTER_API_BASE:-}
+  LLM__GITHUB_TOKEN: ${LLM__GITHUB_TOKEN:-}
+  LLM__PREFERRED_PROVIDER: ${LLM__PREFERRED_PROVIDER:-openai}
+  LLM__FALLBACK_PROVIDERS: ${LLM__FALLBACK_PROVIDERS:-[]}
+  LLM__DEFAULT_MODEL: ${LLM__DEFAULT_MODEL:-change-me-9router-model}
+  LLM__TEMPERATURE: ${LLM__TEMPERATURE:-0.7}
+  LLM__MAX_TOKENS: ${LLM__MAX_TOKENS:-4096}
+  BROWSER__HEADLESS: ${BROWSER__HEADLESS:-true}
+  BROWSER__MAX_PARALLEL: ${BROWSER__MAX_PARALLEL:-2}
+  BROWSER__USER_DATA_DIR: ${BROWSER__USER_DATA_DIR:-./data/sessions/chrome_profile}
+  BROWSER__KEEP_ALIVE: ${BROWSER__KEEP_ALIVE:-true}
+  BROWSER__MAX_STEPS: ${BROWSER__MAX_STEPS:-50}
+  BROWSER__MAX_FAILURES: ${BROWSER__MAX_FAILURES:-3}
+  BROWSER__STEP_TIMEOUT: ${BROWSER__STEP_TIMEOUT:-120}
+  BROWSER__USE_VISION: ${BROWSER__USE_VISION:-auto}
+  BROWSER__LIVE_APPLY: ${BROWSER__LIVE_APPLY:-false}
+  EXA_API_KEY: ${EXA_API_KEY:-}
+  LINKEDIN_EMAIL: ${LINKEDIN_EMAIL:-}
+  LINKEDIN_PASSWORD: ${LINKEDIN_PASSWORD:-}
+  INDEED_EMAIL: ${INDEED_EMAIL:-}
+  INDEED_PASSWORD: ${INDEED_PASSWORD:-}
+  GLASSDOOR_EMAIL: ${GLASSDOOR_EMAIL:-}
+  GLASSDOOR_PASSWORD: ${GLASSDOOR_PASSWORD:-}
+
 services:
   backend:
     build:
       context: .
       dockerfile: docker/Dockerfile.backend
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    environment:
-      - REDIS_URL=redis://redis:6379/0
+    expose:
+      - "8000"
+    environment: *app-environment
     volumes:
-      - ./data:/app/data
-      - ./templates:/app/templates
+      - autoapply_data:/app/data
+      - ./templates:/app/templates:ro
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
@@ -23,6 +76,7 @@ services:
       start_period: 40s
     networks:
       - autoapply
+      - dokploy-network
     restart: unless-stopped
 
   worker:
@@ -30,18 +84,18 @@ services:
       context: .
       dockerfile: docker/Dockerfile.backend
     command: python -m app.workers.application_worker
-    env_file:
-      - .env
-    environment:
-      - REDIS_URL=redis://redis:6379/0
+    environment: *app-environment
     volumes:
-      - ./data:/app/data
-      - ./templates:/app/templates
+      - autoapply_data:/app/data
+      - ./templates:/app/templates:ro
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
       - autoapply
+      - dokploy-network
     restart: unless-stopped
 
   frontend:
@@ -51,20 +105,30 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: dokploy-network
+      traefik.http.routers.autoapply-web.entrypoints: web
+      traefik.http.routers.autoapply-web.rule: Host(`autoapply.arsyadam.id`)
+      traefik.http.routers.autoapply-web.service: autoapply-web
+      traefik.http.services.autoapply-web.loadbalancer.server.port: "3000"
     networks:
       - autoapply
+      - dokploy-network
     restart: unless-stopped
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    command: redis-server --appendonly yes
+    expose:
+      - "6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -76,9 +140,32 @@ services:
       - autoapply
     restart: unless-stopped
 
+  postgres:
+    image: postgres:16-alpine
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-autoapply}
+      POSTGRES_USER: ${POSTGRES_USER:-autoapply}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-autoapply_change_me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autoapply
+    restart: unless-stopped
+
 volumes:
+  autoapply_data:
   redis_data:
+  postgres_data:
 
 networks:
   autoapply:
     driver: bridge
+  dokploy-network:
+    external: true

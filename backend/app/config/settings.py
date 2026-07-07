@@ -30,9 +30,13 @@ class LLMSettings(BaseSettings):
 
     portkey_api_key: SecretStr = SecretStr("")
     openai_api_key: SecretStr = SecretStr("")
+    openai_api_base: str = ""
     groq_api_key: SecretStr = SecretStr("")
+    groq_api_base: str = ""
     gemini_api_key: SecretStr = SecretStr("")
+    gemini_api_base: str = ""
     openrouter_api_key: SecretStr = SecretStr("")
+    openrouter_api_base: str = ""
     github_token: SecretStr = SecretStr("")
     preferred_provider: str = "openai"
     fallback_providers: list[str] = ["groq", "openrouter"]

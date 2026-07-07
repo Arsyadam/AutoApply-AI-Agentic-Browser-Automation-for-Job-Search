@@ -79,16 +79,34 @@ class LLMClient:
             logger.info("portkey_gateway_configured")
 
     def _configure_api_keys(self) -> None:
-        """Push provider API keys into litellm's key registry."""
+        """Push provider API keys and base URLs into litellm's key registry."""
         key_map: dict[str, str] = {
             "openai_api_key": self._llm.openai_api_key.get_secret_value(),
             "groq_api_key": self._llm.groq_api_key.get_secret_value(),
             "gemini_api_key": self._llm.gemini_api_key.get_secret_value(),
             "openrouter_api_key": self._llm.openrouter_api_key.get_secret_value(),
         }
-        for attr, value in key_map.items():
+        base_map: dict[str, str] = {
+            "api_base": self._llm.openai_api_base,
+            "openai_api_base": self._llm.openai_api_base,
+            "groq_api_base": self._llm.groq_api_base,
+            "gemini_api_base": self._llm.gemini_api_base,
+            "openrouter_api_base": self._llm.openrouter_api_base,
+        }
+        for attr, value in {**key_map, **base_map}.items():
             if value:
                 setattr(litellm, attr, value)
+
+    def _api_base_for_model(self, model: str) -> str:
+        """Return a provider-specific custom base URL for the attempted model."""
+        provider = model.split("/")[0] if "/" in model else self._llm.preferred_provider
+        base_urls = {
+            "openai": self._llm.openai_api_base,
+            "groq": self._llm.groq_api_base,
+            "gemini": self._llm.gemini_api_base,
+            "openrouter": self._llm.openrouter_api_base,
+        }
+        return base_urls.get(provider, "")
 
     def _build_messages(
         self, prompt: str, system_prompt: str
@@ -174,6 +192,9 @@ class LLMClient:
                     kwargs["response_format"] = response_format
                 if metadata:
                     kwargs["metadata"] = metadata
+                api_base = self._api_base_for_model(attempt_model)
+                if api_base:
+                    kwargs["api_base"] = api_base
                 if self._credentials is not None:
                     kwargs["api_key"] = self._credentials.api_key
 
