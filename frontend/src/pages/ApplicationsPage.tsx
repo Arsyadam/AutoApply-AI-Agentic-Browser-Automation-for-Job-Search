@@ -9,7 +9,8 @@ import Alert from '@mui/material/Alert';
 import InboxIcon from '@mui/icons-material/Inbox';
 
 import ApplicationCard from '@/components/applications/ApplicationCard';
-import StatusUpdateDialog from '@/components/applications/StatusUpdateDialog';
+// Baris di bawah ini dimatikan karena filenya tidak ada
+// import StatusUpdateDialog from '@/components/applications/StatusUpdateDialog';
 import LoadingState from '@/components/common/LoadingState';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useApplications, useApproveApplication } from '@/hooks/useApplications';
@@ -127,11 +128,12 @@ function ApplicationsPage() {
           </>
         )}
 
-        <StatusUpdateDialog
+        {/* Komponen di bawah ini dimatikan karena filenya tidak ada */}
+        {/* <StatusUpdateDialog
           appId={statusAppId}
           open={statusAppId !== null}
           onClose={() => setStatusAppId(null)}
-        />
+        /> */}
       </Box>
     </ErrorBoundary>
   );
